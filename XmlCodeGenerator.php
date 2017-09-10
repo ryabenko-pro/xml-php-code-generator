@@ -6,6 +6,8 @@ class XmlCodeGenerator
 
     protected $code;
 
+    protected $names = [];
+
     /**
      * @param string|SimpleXMLElement $xml
      * @return string
@@ -39,16 +41,18 @@ class XmlCodeGenerator
         /** @var SimpleXMLElement $child */
         foreach ($xml as $child) {
             $childName = $child->getName();
+            $varName = $this->getName($childName);
+
             $value = (string)$child;
 
             if (empty($value)) {
-                $this->addCode('$%s = $%s->addChild("%s");', $childName, $previousName, $childName);
+                $this->addCode('$%s = $%s->addChild("%s");', $varName, $previousName, $childName);
             } else {
-                $this->addCode('$%s = $%s->addChild("%s", "%s");', $childName, $previousName, $childName, $value);
+                $this->addCode('$%s = $%s->addChild("%s", "%s");', $varName, $previousName, $childName, $value);
             }
 
-            $this->generateAttributes($child, $childName);
-            $this->generateChildCode($child, $childName);
+            $this->generateAttributes($child, $varName);
+            $this->generateChildCode($child, $varName);
         }
 
         return $code;
@@ -76,7 +80,19 @@ class XmlCodeGenerator
         $this->code = [];
     }
 
-    public function addCode($line, $params = null) {
+    public function addCode($line, $params = null)
+    {
         $this->code[] = call_user_func_array("sprintf", func_get_args());
+    }
+
+    protected function getName($name)
+    {
+        if (!isset($this->names[$name])) {
+            $this->names[$name] = 1;
+
+            return $name;
+        }
+
+        return sprintf("%s%d", $name, $this->names++);
     }
 }
