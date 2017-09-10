@@ -21,10 +21,12 @@ class XmlCodeGenerator
         }
 
         $rootName = $xml->getName();
-        $this->addCode('$%s = new SimpleXMLElement("%s");', $rootName, $rootName);
+        $varName = $this->getName($rootName);
 
-        $this->generateAttributes($xml, $rootName);
-        $this->generateChildCode($xml, $rootName);
+        $this->addCode('$%s = new SimpleXMLElement("%s");', $varName, $rootName);
+
+        $this->generateAttributes($xml, $varName);
+        $this->generateChildCode($xml, $varName);
 
         return implode("\n", $this->code);
     }
@@ -93,6 +95,6 @@ class XmlCodeGenerator
             return $name;
         }
 
-        return sprintf("%s%d", $name, $this->names++);
+        return sprintf("%s%d", $name, $this->names[$name]++);
     }
 }

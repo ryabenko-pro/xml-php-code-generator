@@ -47,5 +47,15 @@ $root1 = $element1->addChild("root");
 $root2 = $root->addChild("root");', $code);
     }
 
+    public function testShouldGenerateUniqueNames()
+    {
+        $code = $this->generator->generate('<root><element/><element><root/></element><root/></root>');
+
+        $this->assertEquals('$root = new SimpleXMLElement("root");
+$element = $root->addChild("element");
+$element1 = $root->addChild("element");
+$root1 = $element1->addChild("root");
+$root2 = $root->addChild("root");', $code);
+    }
 
 }
