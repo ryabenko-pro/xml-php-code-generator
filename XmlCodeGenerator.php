@@ -4,24 +4,27 @@
 class XmlCodeGenerator
 {
 
+    protected $code;
+
     /**
      * @param string|SimpleXMLElement $xml
      * @return string
      */
     public function generate($xml)
     {
+        $this->reset();
+
         if (is_string($xml)) {
             $xml = new SimpleXMLElement($xml);
         }
 
         $rootName = $xml->getName();
-        $code[] = sprintf('$%s = new SimpleXMLElement("%s");', $rootName, $rootName);
+        $this->addCode('$%s = new SimpleXMLElement("%s");', $rootName, $rootName);
 
-        $code = array_merge($code, $this->generateAttributes($xml, $rootName));
+        $this->generateAttributes($xml, $rootName);
+        $this->generateChildCode($xml, $rootName);
 
-        $code = array_merge($code, $this->generateChildCode($xml, $rootName));
-
-        return implode("\n", $code);
+        return implode("\n", $this->code);
     }
 
     /**
@@ -39,14 +42,13 @@ class XmlCodeGenerator
             $value = (string)$child;
 
             if (empty($value)) {
-                $code[] = sprintf('$%s = $%s->addChild("%s");', $childName, $previousName, $childName);
+                $this->addCode('$%s = $%s->addChild("%s");', $childName, $previousName, $childName);
             } else {
-                $code[] = sprintf('$%s = $%s->addChild("%s", "%s");', $childName, $previousName, $childName, $value);
+                $this->addCode('$%s = $%s->addChild("%s", "%s");', $childName, $previousName, $childName, $value);
             }
 
-            $code = array_merge($code, $this->generateAttributes($child, $childName));
-
-            $code = array_merge($code, $this->generateChildCode($child, $childName));
+            $this->generateAttributes($child, $childName);
+            $this->generateChildCode($child, $childName);
         }
 
         return $code;
@@ -63,9 +65,18 @@ class XmlCodeGenerator
         $code = [];
 
         foreach ($xml->attributes() as $key => $value) {
-            $code[] = sprintf('$%s["%s"] = "%s";', $elementName, $key, $value);
+            $this->addCode('$%s["%s"] = "%s";', $elementName, $key, $value);
         }
 
         return $code;
+    }
+
+    protected function reset()
+    {
+        $this->code = [];
+    }
+
+    public function addCode($line, $params = null) {
+        $this->code[] = call_user_func_array("sprintf", func_get_args());
     }
 }
