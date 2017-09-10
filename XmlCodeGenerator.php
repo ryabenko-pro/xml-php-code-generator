@@ -21,8 +21,8 @@ class XmlCodeGenerator
         }
 
         $rootName = $xml->getName();
-        $varName = $this->getName($rootName);
-        $varName = $this->dashesToCamelCase($varName);
+        $varName = $this->dashesToCamelCase($rootName);
+        $varName = $this->getUniqueVariableName($varName);
 
         $this->addCode('$%s = new SimpleXMLElement("%s");', $varName, $rootName);
 
@@ -44,8 +44,8 @@ class XmlCodeGenerator
         /** @var SimpleXMLElement $child */
         foreach ($xml as $child) {
             $childName = $child->getName();
-            $varName = $this->getName($childName);
-            $varName = $this->dashesToCamelCase($varName);
+            $varName = $this->dashesToCamelCase($childName);
+            $varName = $this->getUniqueVariableName($varName);
 
             $value = (string)$child;
 
@@ -79,17 +79,30 @@ class XmlCodeGenerator
         return $code;
     }
 
+    /**
+     * Reset the state of generator
+     */
     protected function reset()
     {
         $this->code = [];
+        $this->names = [];
     }
 
+    /**
+     * @param string $line sprintf line template
+     * @param string[] $params list of parameters to replace $line placeholders
+     */
     public function addCode($line, $params = null)
     {
         $this->code[] = call_user_func_array("sprintf", func_get_args());
     }
 
-    protected function getName($name)
+    /**
+     * Generates unique variable name
+     * @param string $name
+     * @return string
+     */
+    protected function getUniqueVariableName($name)
     {
         if (!isset($this->names[$name])) {
             $this->names[$name] = 1;
@@ -100,10 +113,14 @@ class XmlCodeGenerator
         return sprintf("%s%d", $name, $this->names[$name]++);
     }
 
+    /**
+     * @param string $string String to camel case
+     * @param bool $capitalizeFirstCharacter
+     * @return string
+     */
     protected function dashesToCamelCase($string, $capitalizeFirstCharacter = false)
     {
-
-        $str = str_replace('-', '', ucwords($string, '-'));
+        $str = str_replace('_', '', ucwords($string, '-_ '));
 
         if (!$capitalizeFirstCharacter) {
             $str = lcfirst($str);

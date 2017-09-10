@@ -49,10 +49,11 @@ $root2 = $root->addChild("root");', $code);
 
     public function testShouldGenerateCamelCaseVariables()
     {
-        $code = $this->generator->generate('<Root><SomeElement/></Root>');
+        $code = $this->generator->generate('<Root><SomeElement/><some_element/></Root>');
 
         $this->assertEquals('$root = new SimpleXMLElement("Root");
-$someElement = $root->addChild("SomeElement");', $code);
+$someElement = $root->addChild("SomeElement");
+$someElement1 = $root->addChild("some_element");', $code);
     }
 
 }
