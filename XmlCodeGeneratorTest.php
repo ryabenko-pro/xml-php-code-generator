@@ -47,15 +47,12 @@ $root1 = $element1->addChild("root");
 $root2 = $root->addChild("root");', $code);
     }
 
-    public function testShouldGenerateUniqueNames()
+    public function testShouldGenerateCamelCaseVariables()
     {
-        $code = $this->generator->generate('<root><element/><element><root/></element><root/></root>');
+        $code = $this->generator->generate('<Root><SomeElement/></Root>');
 
-        $this->assertEquals('$root = new SimpleXMLElement("root");
-$element = $root->addChild("element");
-$element1 = $root->addChild("element");
-$root1 = $element1->addChild("root");
-$root2 = $root->addChild("root");', $code);
+        $this->assertEquals('$root = new SimpleXMLElement("Root");
+$someElement = $root->addChild("SomeElement");', $code);
     }
 
 }

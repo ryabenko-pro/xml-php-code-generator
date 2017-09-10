@@ -22,6 +22,7 @@ class XmlCodeGenerator
 
         $rootName = $xml->getName();
         $varName = $this->getName($rootName);
+        $varName = $this->dashesToCamelCase($varName);
 
         $this->addCode('$%s = new SimpleXMLElement("%s");', $varName, $rootName);
 
@@ -44,6 +45,7 @@ class XmlCodeGenerator
         foreach ($xml as $child) {
             $childName = $child->getName();
             $varName = $this->getName($childName);
+            $varName = $this->dashesToCamelCase($varName);
 
             $value = (string)$child;
 
@@ -97,4 +99,17 @@ class XmlCodeGenerator
 
         return sprintf("%s%d", $name, $this->names[$name]++);
     }
+
+    protected function dashesToCamelCase($string, $capitalizeFirstCharacter = false)
+    {
+
+        $str = str_replace('-', '', ucwords($string, '-'));
+
+        if (!$capitalizeFirstCharacter) {
+            $str = lcfirst($str);
+        }
+
+        return $str;
+    }
+
 }
