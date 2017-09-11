@@ -8,6 +8,13 @@ class XmlCodeGenerator
 
     protected $names = [];
 
+    protected $docType;
+
+    public function __construct($docType = null)
+    {
+        $this->setDocType($docType);
+    }
+
     /**
      * @param string|SimpleXMLElement $xml
      * @return string
@@ -24,7 +31,7 @@ class XmlCodeGenerator
         $varName = $this->dashesToCamelCase($rootName);
         $varName = $this->getUniqueVariableName($varName);
 
-        $this->addCode('$%s = new SimpleXMLElement("%s");', $varName, $rootName);
+        $this->addCode('$%s = new SimpleXMLElement("' . $this->docType . '<%s />");', $varName, $rootName);
 
         $this->generateAttributes($xml, $varName);
         $this->generateChildCode($xml, $varName);
@@ -127,6 +134,11 @@ class XmlCodeGenerator
         }
 
         return $str;
+    }
+
+    public function setDocType($docType)
+    {
+        $this->docType = $docType;
     }
 
 }
