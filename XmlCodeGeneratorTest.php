@@ -65,4 +65,15 @@ $someElement1 = $root->addChild("some_element");', $code);
         $this->assertEquals('$root = new SimpleXMLElement("' . $docType . '<Root />");', $code);
     }
 
+    public function testShouldGenerateNamespaces()
+    {
+        $code = $this->generator->generate('<ns:root xmlns:ns="http://some.ns/">
+        <other:element xmlns:other="http://other.ns/"><other:root ns:attribute="value"/></other:element></ns:root>');
+
+        $this->assertEquals('$root = new SimpleXMLElement("<ns:root xmlns:ns=\"http://some.ns/\"/>");
+$element = $root->addChild("other:element", null, "http://other.ns/");
+$root1 = $element->addChild("other:root");
+$root1["ns:attribute"] = "value";', $code);
+    }
+
 }
