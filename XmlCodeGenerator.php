@@ -10,6 +10,9 @@ class XmlCodeGenerator
 
     protected $docType;
 
+    protected $namespaces = [];
+    protected $namespaceKeys = [];
+
     public function __construct($docType = null)
     {
         $this->setDocType($docType);
@@ -27,11 +30,25 @@ class XmlCodeGenerator
             $xml = new SimpleXMLElement($xml);
         }
 
+        $this->namespaces = $xml->getNamespaces(true);
+        $this->namespaceKeys = array_flip($this->namespaces);
+
         $rootName = $xml->getName();
         $varName = $this->dashesToCamelCase($rootName);
         $varName = $this->getUniqueVariableName($varName);
 
-        $this->addCode('$%s = new SimpleXMLElement("' . $this->docType . '<%s />");', $varName, $rootName);
+        $namespaceDefinition = '';
+
+        $namespaces = $xml->getNamespaces();
+        if (count($namespaces) > 0) {
+            $rootNamespace = reset($namespaces);
+            $namespaceKey = $this->namespaceKeys[$rootNamespace];
+            $rootName = sprintf("%s:%s", $namespaceKey, $rootName);
+
+            $namespaceDefinition = sprintf('xmlns:%s=\"%s\"', $namespaceKey, $rootNamespace);
+        }
+
+        $this->addCode('$%s = new SimpleXMLElement("' . $this->docType . '<%s %s/>");', $varName, $rootName, $namespaceDefinition);
 
         $this->generateAttributes($xml, $varName);
         $this->generateChildCode($xml, $varName);
@@ -42,19 +59,17 @@ class XmlCodeGenerator
     /**
      * @param SimpleXMLElement $xml
      * @param string $previousName
-     * @return string[]
+     * @param string[] $definedNamespaces Namespaces defined in parent nodes to avoid namespace redeclaration
      */
-    public function generateChildCode($xml, $previousName)
+    public function generateChildCode($xml, $previousName, $definedNamespaces = [])
     {
-        $code = [];
-
         /** @var SimpleXMLElement $child */
-        foreach ($xml as $child) {
+        foreach ($xml->children() as $child) {
             $childName = $child->getName();
             $varName = $this->dashesToCamelCase($childName);
             $varName = $this->getUniqueVariableName($varName);
 
-            $value = (string)$child;
+            $value = trim((string)$child);
 
             if (empty($value)) {
                 $this->addCode('$%s = $%s->addChild("%s");', $varName, $previousName, $childName);
@@ -66,7 +81,37 @@ class XmlCodeGenerator
             $this->generateChildCode($child, $varName);
         }
 
-        return $code;
+        foreach ($this->namespaces as $namespace) {
+            /** @var SimpleXMLElement $child */
+            foreach ($xml->children($namespace) as $child) {
+                $childName = $child->getName();
+                $varName = $this->dashesToCamelCase($childName);
+                $varName = $this->getUniqueVariableName($varName);
+
+                $value = trim((string)$child);
+
+                if (isset($definedNamespaces[$namespace])) {
+                    if (empty($value)) {
+                        $this->addCode('$%s = $%s->addChild("%s:%s");', $varName, $previousName, $this->namespaceKeys[$namespace], $childName);
+                    } else {
+                        $this->addCode('$%s = $%s->addChild("%s:%s", "%s");', $varName, $previousName, $this->namespaceKeys[$namespace], $childName, $value);
+                    }
+
+                } else {
+
+                    if (empty($value)) {
+                        $this->addCode('$%s = $%s->addChild("%s:%s", null, "%s");', $varName, $previousName, $this->namespaceKeys[$namespace], $childName, $namespace);
+                    } else {
+                        $this->addCode('$%s = $%s->addChild("%s:%s", "%s", "%s");', $varName, $previousName, $this->namespaceKeys[$namespace], $childName, $value, $namespace);
+                    }
+                }
+
+                $definedNamespaces[$namespace] = true;
+
+                $this->generateAttributes($child, $varName);
+                $this->generateChildCode($child, $varName, $definedNamespaces);
+            }
+        }
     }
 
 
@@ -81,6 +126,12 @@ class XmlCodeGenerator
 
         foreach ($xml->attributes() as $key => $value) {
             $this->addCode('$%s["%s"] = "%s";', $elementName, $key, $value);
+        }
+
+        foreach ($this->namespaces as $namespaceKey => $namespace) {
+            foreach ($xml->attributes($namespace) as $key => $value) {
+                $this->addCode('$%s["%s:%s"] = "%s";', $elementName, $namespaceKey, $key, $value);
+            }
         }
 
         return $code;
