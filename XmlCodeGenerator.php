@@ -48,7 +48,13 @@ class XmlCodeGenerator
             $namespaceDefinition = sprintf('xmlns:%s=\"%s\"', $namespaceKey, $rootNamespace);
         }
 
-        $this->addCode('$%s = new SimpleXMLElement("' . $this->docType . '<%s %s/>");', $varName, $rootName, $namespaceDefinition);
+        $this->addCode('$%s = new SimpleXMLElement("' . addcslashes($this->docType, "\"") . '<%s %s/>");', $varName, $rootName, $namespaceDefinition);
+        $value = trim((string)$xml);
+        $value = addslashes($value);
+
+        if ("" !== $value) {
+            $this->addCode('$%s[0] = "%s";', $varName, $value);
+        }
 
         $this->generateAttributes($xml, $varName);
         $this->generateChildCode($xml, $varName);
@@ -70,8 +76,9 @@ class XmlCodeGenerator
             $varName = $this->getUniqueVariableName($varName);
 
             $value = trim((string)$child);
+            $value = addslashes($value);
 
-            if (empty($value)) {
+            if ("" === $value) {
                 $this->addCode('$%s = $%s->addChild("%s");', $varName, $previousName, $childName);
             } else {
                 $this->addCode('$%s = $%s->addChild("%s", "%s");', $varName, $previousName, $childName, $value);
@@ -89,9 +96,10 @@ class XmlCodeGenerator
                 $varName = $this->getUniqueVariableName($varName);
 
                 $value = trim((string)$child);
+                $value = addslashes($value);
 
                 if (isset($definedNamespaces[$namespace])) {
-                    if (empty($value)) {
+                    if ("" === $value) {
                         $this->addCode('$%s = $%s->addChild("%s:%s");', $varName, $previousName, $this->namespaceKeys[$namespace], $childName);
                     } else {
                         $this->addCode('$%s = $%s->addChild("%s:%s", "%s");', $varName, $previousName, $this->namespaceKeys[$namespace], $childName, $value);

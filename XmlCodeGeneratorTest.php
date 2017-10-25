@@ -19,11 +19,12 @@ class XmlCodeGeneratorTest extends TestCase
 
     public function testShouldGenerateNestingCode()
     {
-        $code = $this->generator->generate('<root><element><child>value</child></element></root>');
+        $code = $this->generator->generate('<root><element><child>value</child><child>0</child></element></root>');
 
         $this->assertEquals('$root = new SimpleXMLElement("<root />");
 $element = $root->addChild("element");
-$child = $element->addChild("child", "value");', $code);
+$child = $element->addChild("child", "value");
+$child1 = $element->addChild("child", "0");', $code);
     }
 
     public function testShouldGenerateAttributes()
@@ -62,7 +63,7 @@ $someElement1 = $root->addChild("some_element");', $code);
         $this->generator->setDocType($docType);
         $code = $this->generator->generate('<Root />');
 
-        $this->assertEquals('$root = new SimpleXMLElement("' . $docType . '<Root />");', $code);
+        $this->assertEquals('$root = new SimpleXMLElement("' . addcslashes($docType, "\"") . '<Root />");', $code);
     }
 
     public function testShouldGenerateNamespaces()
